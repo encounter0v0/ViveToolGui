@@ -1,0 +1,119 @@
+<winuiex:WindowEx
+    x:Class="ViveToolGui.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:ViveToolGui"
+    xmlns:models="using:ViveToolGui.Models"
+    xmlns:winuiex="using:WinUIEx"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <Grid Padding="16" RowSpacing="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- 标题 + 状态提示 -->
+        <StackPanel Grid.Row="0" Spacing="8">
+            <TextBlock Text="ViveTool GUI" FontSize="22" FontWeight="SemiBold" />
+            <InfoBar x:Name="AdminBar"
+                     Title="需要管理员权限"
+                     Message="本程序需要以管理员身份运行才能修改 Windows 功能开关。"
+                     Severity="Warning"
+                     IsClosable="True" />
+            <InfoBar x:Name="MissingBar"
+                     Title="未找到 vivetool.exe"
+                     Message="请将 vivetool.exe 放入 tools 目录（详见 tools/README.md），然后重启程序。"
+                     Severity="Error"
+                     IsClosable="True" />
+        </StackPanel>
+
+        <!-- 工具栏 -->
+        <Grid Grid.Row="1" ColumnSpacing="12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <Button Grid.Column="0"
+                    Click="RefreshButton_Click"
+                    IsEnabled="{x:Bind ViewModel.IsBusy, Mode=OneWay, Converter={StaticResource BoolNegation}}">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <SymbolIcon Symbol="Refresh" />
+                    <TextBlock Text="刷新" />
+                </StackPanel>
+            </Button>
+            <TextBox Grid.Column="1"
+                     PlaceholderText="按 Feature ID 或名称搜索..."
+                     Text="{x:Bind ViewModel.SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+            <ProgressRing Grid.Column="2"
+                          IsActive="{x:Bind ViewModel.IsBusy, Mode=OneWay}"
+                          Width="24" Height="24" />
+        </Grid>
+
+        <!-- 功能列表 -->
+        <ListView Grid.Row="2"
+                  x:Name="FeatureList"
+                  ItemsSource="{x:Bind ViewModel.FilteredFeatures, Mode=OneWay}"
+                  SelectionMode="None"
+                  BorderThickness="1"
+                  BorderBrush="{ThemeResource ControlStrokeColorDefault}">
+            <ListView.HeaderTemplate>
+                <DataTemplate>
+                    <Grid Padding="12,8" ColumnSpacing="12"
+                          Background="{ThemeResource LayerFillColorDefaultBrush}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="120" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="120" />
+                            <ColumnDefinition Width="280" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="Feature ID" FontWeight="SemiBold" />
+                        <TextBlock Grid.Column="1" Text="名称" FontWeight="SemiBold" />
+                        <TextBlock Grid.Column="2" Text="状态" FontWeight="SemiBold" />
+                        <TextBlock Grid.Column="3" Text="操作" FontWeight="SemiBold" />
+                    </Grid>
+                </DataTemplate>
+            </ListView.HeaderTemplate>
+            <ListView.ItemTemplate>
+                <DataTemplate x:DataType="models:FeatureEntry">
+                    <Grid Padding="12,8" ColumnSpacing="12"
+                          BorderBrush="{ThemeResource ControlStrokeColorDefault}"
+                          BorderThickness="0,0,0,1">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="120" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="120" />
+                            <ColumnDefinition Width="280" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="{x:Bind Id}" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="1"
+                                   Text="{x:Bind Name}"
+                                   VerticalAlignment="Center"
+                                   TextTrimming="CharacterEllipsis"
+                                   TextWrapping="NoWrap" />
+                        <TextBlock Grid.Column="2" Text="{x:Bind StateLabel}" VerticalAlignment="Center" />
+                        <StackPanel Grid.Column="3"
+                                    Orientation="Horizontal"
+                                    Spacing="8"
+                                    VerticalAlignment="Center">
+                            <Button Content="启用" Click="EnableButton_Click" CommandParameter="{x:Bind}" />
+                            <Button Content="禁用" Click="DisableButton_Click" CommandParameter="{x:Bind}" />
+                            <Button Content="重置" Click="ResetButton_Click" CommandParameter="{x:Bind}" />
+                        </StackPanel>
+                    </Grid>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+
+        <!-- 状态栏 -->
+        <Grid Grid.Row="3">
+            <TextBlock Text="{x:Bind ViewModel.StatusMessage, Mode=OneWay}"
+                       VerticalAlignment="Center"
+                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+        </Grid>
+    </Grid>
+</winuiex:WindowEx>
