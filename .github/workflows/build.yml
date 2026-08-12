@@ -11,33 +11,35 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup .NET SDK 8.0.402
+      # 1. 挂载 Visual Studio 2022 环境变量与 MSBuild
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      # 2. 安装 .NET SDK 8.0.402（满足 App SDK 依赖）
+      - name: Setup .NET SDK
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.402'
 
-      - name: Build and Publish WinUI 3 App
+      # 3. 还原 NuGet 包
+      - name: Restore NuGet Packages
+        run: nuget restore ViveToolGui.sln
+
+      # 4. 使用完整 VS 环境下的 MSBuild 进行 WinUI 3 编译与打包
+      - name: Build WinUI3 App with MSBuild
         shell: powershell
         run: |
-          # 1. 精确获取项目文件路径
-          $proj = (Get-ChildItem -Path . -Filter "ViveToolGui.csproj" -Recurse | Select-Object -First 1).FullName
-          Write-Host "Project File Path: $proj"
+          msbuild src/ViveToolGui/ViveToolGui.csproj `
+            /p:Configuration=Release `
+            /p:Platform=x64 `
+            /p:RuntimeIdentifier=win-x64 `
+            /p:PublishProfile=win-x64 `
+            /p:WindowsPackageType=None `
+            /p:AppxPackageSigningEnabled=false `
+            /p:WindowsSdkPackageVersion=10.0.19041.38 `
+            /p:OutputPath="D:\a\publish\"
 
-          # 2. 还原 NuGet 依赖
-          dotnet restore "$proj"
-
-          # 3. 显式注入 WindowsSdkPackageVersion 解决 Windows App SDK 缺失包引用问题
-          dotnet publish "$proj" `
-            -c Release `
-            -r win-x64 `
-            --self-contained true `
-            -p:PublishSingleFile=false `
-            -p:WindowsPackageType=None `
-            -p:AppxPackageSigningEnabled=false `
-            -p:Platform=x64 `
-            -p:WindowsSdkPackageVersion=10.0.19041.38 `
-            -o D:\a\publish\
-
+      # 5. 上传打包文件
       - name: Upload EXE Artifact
         uses: actions/upload-artifact@v4
         with:
