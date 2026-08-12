@@ -11,19 +11,14 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Setup .NET
+    - name: Setup .NET SDK
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: '8.0.x'
+        dotnet-version: '8.0.402' # 指定适配 Windows App SDK 1.6 的具体 SDK 版本
 
-    - name: Restore dependencies
-      run: dotnet restore
-
-    - name: Build and Publish
+    - name: Build and Publish WinUI 3 EXE
       run: |
-        Get-ChildItem -Path . -Filter "*.csproj" -Recurse | ForEach-Object {
-          dotnet publish $_.FullName -c Release -r win-x64 --self-contained true -o ./publish
-        }
+        dotnet publish src/ViveToolGui/ViveToolGui.csproj -c Release -r win-x64 --self-contained true -p:WindowsPackageType=None -o ./publish
 
     - name: Upload EXE Artifact
       uses: actions/upload-artifact@v4
