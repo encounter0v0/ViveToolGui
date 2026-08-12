@@ -14,26 +14,34 @@ jobs:
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
 
-      - name: Setup .NET SDK
+      - name: Setup .NET SDK 8.0.402
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.0.x'
+          dotnet-version: '8.0.402'
 
-      - name: Build with MSBuild
+      - name: Build and Publish WinUI 3 App
         shell: powershell
         run: |
-          # 1. 自动获取带有反斜杠的完整绝对路径，避免正斜杠导致 MSBuild 开关解析错误
-          $proj = (Get-ChildItem -Path . -Filter "*.csproj" -Recurse | Select-Object -First 1).FullName
-          Write-Host "Target Project: $proj"
+          # 1. 精确获取项目文件物理路径
+          $proj = (Get-ChildItem -Path . -Filter "ViveToolGui.csproj" -Recurse | Select-Object -First 1).FullName
+          Write-Host "Project File Path: $proj"
 
           # 2. 还原 NuGet 依赖
-          nuget restore $proj
+          dotnet restore "$proj"
 
-          # 3. 传入 Platform=x64 解决 XamlCompiler.exe 报错，并输出到 publish 目录
-          msbuild $proj /p:Configuration=Release /p:Platform=x64 /p:RuntimeIdentifier=win-x64 /p:WindowsPackageType=None /p:AppxPackageSigningEnabled=false /p:OutputPath="D:\a\publish\"
+          # 3. 执行打包发布
+          dotnet publish "$proj" `
+            -c Release `
+            -r win-x64 `
+            --self-contained true `
+            -p:PublishSingleFile=false `
+            -p:WindowsPackageType=None `
+            -p:AppxPackageSigningEnabled=false `
+            -p:Platform=x64 `
+            -o D:\a\publish\
 
       - name: Upload EXE Artifact
         uses: actions/upload-artifact@v4
         with:
           name: ViveToolGui-EXE
-          path: D:/a/publish/*
+          path: D:\a\publish\*
