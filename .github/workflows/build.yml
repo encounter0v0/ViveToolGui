@@ -16,12 +16,25 @@ jobs:
         with:
           dotnet-version: '8.0.402'
 
-      - name: Restore dependencies
-        run: dotnet restore ViveToolGui/ViveToolGui.csproj
-
-      - name: Build and Publish EXE
+      - name: Find Project and Build
         run: |
-          dotnet publish ViveToolGui/ViveToolGui.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=false -p:WindowsPackageType=None -o ./publish
+          # 1. 在日志中输出当前目录下所有的 .csproj 文件路径，便于直观排查
+          echo "=== Finding project files ==="
+          Get-ChildItem -Path . -Filter "*.csproj" -Recurse | ForEach-Object { Write-Host $_.FullName }
+          
+          # 2. 找到第一个 .csproj 文件
+          $proj = (Get-ChildItem -Path . -Filter "*.csproj" -Recurse | Select-Object -First 1).FullName
+          
+          if (-not $proj) {
+            Write-Error "No .csproj file found in repository!"
+            exit 1
+          }
+          
+          Write-Host "Found project file: $proj"
+          
+          # 3. 使用找到的绝对路径执行 Restore 和 Publish
+          dotnet restore "$proj"
+          dotnet publish "$proj" -c Release -r win-x64 --self-contained true -p:PublishSingleFile=false -p:WindowsPackageType=None -o ./publish
 
       - name: Upload EXE Artifact
         uses: actions/upload-artifact@v4
